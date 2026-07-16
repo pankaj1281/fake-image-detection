@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
@@ -9,6 +9,7 @@ function App() {
   const [result, setResult] = useState(null)
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const sortedProbabilities = useMemo(() => {
     if (!result?.probabilities) return []
@@ -17,10 +18,21 @@ function App() {
 
   const onFileChange = (selected) => {
     if (!selected) return
+    if (!selected.type.startsWith('image/')) {
+      setError('Please upload a valid image file.')
+      return
+    }
+    setError('')
     setFile(selected)
     setPreview(URL.createObjectURL(selected))
     setResult(null)
   }
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
 
   const submit = async () => {
     if (!file) return
@@ -58,6 +70,7 @@ function App() {
           <input type="file" accept="image/*" onChange={(e) => onFileChange(e.target.files?.[0])} />
           <span>{file ? file.name : 'Drop image here or click to upload'}</span>
         </label>
+        {error && <p>{error}</p>}
 
         {preview && <img className="preview" src={preview} alt="Preview" />}
 
