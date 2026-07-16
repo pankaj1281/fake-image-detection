@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import './App.css'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
@@ -24,15 +24,14 @@ function App() {
     }
     setError('')
     setFile(selected)
-    setPreview(URL.createObjectURL(selected))
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === 'string' ? reader.result : ''
+      setPreview(dataUrl.startsWith('data:image/') ? dataUrl : '')
+    }
+    reader.readAsDataURL(selected)
     setResult(null)
   }
-
-  useEffect(() => {
-    return () => {
-      if (preview) URL.revokeObjectURL(preview)
-    }
-  }, [preview])
 
   const submit = async () => {
     if (!file) return
