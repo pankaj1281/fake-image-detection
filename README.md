@@ -45,16 +45,102 @@ fake-image-detector/
 └── README.md
 ```
 
-## Local Setup
+## Step-by-Step Setup and Run Guide
+
+### 1) Backend environment
+
+Run each command in order from the repository root:
 
 ```bash
 python -m venv .venv
+```
+Creates a local virtual environment in `.venv`.
+
+```bash
 source .venv/bin/activate
+```
+Activates the virtual environment (Linux/macOS).
+
+```bash
 pip install -r requirements.txt
-uvicorn src.api.main:app --reload
+```
+Installs backend dependencies (PyTorch, FastAPI, MLflow, TensorBoard, etc.).
+
+### 2) Prepare training data
+
+Training expects this exact folder layout:
+
+```text
+data/
+├── train/
+│   ├── ai_generated/
+│   ├── deepfake/
+│   ├── gan_generated/
+│   ├── diffusion_generated/
+│   ├── manipulated/
+│   └── real/
+└── val/
+    ├── ai_generated/
+    ├── deepfake/
+    ├── gan_generated/
+    ├── diffusion_generated/
+    ├── manipulated/
+    └── real/
 ```
 
-Frontend:
+If `data/train` or `data/val` is missing, training will stop with a setup message.
+
+### 3) Train the model
+
+```bash
+python -m src.training.train
+```
+
+What this run does:
+- Loads images from `data/train` and `data/val`
+- Trains the ensemble model
+- Saves checkpoints in `models/checkpoints/`
+- Logs metrics to TensorBoard and MLflow
+- Uses early stopping automatically
+
+Optional monitoring in separate terminals:
+
+```bash
+tensorboard --logdir runs
+```
+
+```bash
+mlflow ui
+```
+
+### 4) Evaluate and inference
+
+```bash
+python -m src.evaluation.evaluate
+```
+Runs example evaluation metrics and prints a report.
+
+```bash
+python -m src.inference.infer
+```
+Runs inference on `data/sample.jpg` (if present).
+
+### 5) Run the backend API
+
+```bash
+uvicorn src.api.main:app --reload
+```
+Starts FastAPI on `http://127.0.0.1:8000`.
+
+Useful endpoints:
+- `GET /health`
+- `GET /model_info`
+- `POST /predict`
+- `POST /batch_predict`
+
+### 6) Run the frontend
+
+In a new terminal:
 
 ```bash
 cd frontend
@@ -62,18 +148,19 @@ npm install
 npm run dev
 ```
 
-## Training / Evaluation / Inference
-
-```bash
-python -m src.training.train
-python -m src.evaluation.evaluate
-python -m src.inference.infer
-```
+Then open the local Vite URL shown in the terminal (usually `http://localhost:5173`).
 
 ## Testing
 
 ```bash
 python -m unittest discover -s tests
+```
+
+Frontend production build check:
+
+```bash
+cd frontend
+npm run build
 ```
 
 ## Deployment
