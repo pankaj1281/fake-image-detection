@@ -90,6 +90,26 @@ data/
 
 If `data/train` or `data/val` is missing, training will stop with a setup message.
 
+#### How to fill `real` and `fake` data correctly
+
+This project trains a **6-class setup** (`ai_generated`, `deepfake`, `gan_generated`, `diffusion_generated`, `manipulated`, `real`), not a single generic `fake` folder.
+
+- Put authentic photos in `real/`.
+- Put fake images into the specific fake subtype folders above.
+- Keep class counts as balanced as possible (avoid one class dominating training).
+- Use the same quality level (resolution/compression) across classes.
+- Remove duplicates and near-duplicates before splitting.
+- Split by source/identity first, then into `train/` and `val/`, to avoid data leakage.
+
+#### Recommended data sources
+
+- **CIFAKE**: strong baseline for real vs AI-generated images.
+- **FaceForensics++**: useful for face manipulation/deepfake examples.
+- **DFDC**: diverse deepfake videos/frames for robust fake patterns.
+- **Custom data**: add domain-specific real and manipulated samples for your use case.
+
+For better accuracy, combine multiple datasets, keep labels clean, and maintain similar numbers of images for each class in both `train` and `val`.
+
 ### 3) Train the model
 
 ```bash
