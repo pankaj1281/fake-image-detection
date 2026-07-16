@@ -90,7 +90,13 @@ data/
 
 If `data/train` or `data/val` is missing, training will stop with a setup message.
 
-#### How to fill `real` and `fake` data correctly
+Create folders automatically (optional, safe to re-run):
+
+```bash
+python -m src.dataset.prepare_structure
+```
+
+#### How to fill all 6 class folders correctly
 
 This project trains a **6-class setup** (`ai_generated`, `deepfake`, `gan_generated`, `diffusion_generated`, `manipulated`, `real`), not a single generic `fake` folder.
 
@@ -101,12 +107,35 @@ This project trains a **6-class setup** (`ai_generated`, `deepfake`, `gan_genera
 - Remove duplicates and near-duplicates before splitting.
 - Split by source/identity first, then into `train/` and `val/`, to avoid data leakage.
 
-#### Recommended data sources
+#### Recommended data sources (with links)
 
-- **CIFAKE**: strong baseline for real vs AI-generated images.
-- **FaceForensics++**: useful for face manipulation/deepfake examples.
-- **DFDC**: diverse deepfake videos/frames for robust fake patterns.
-- **Custom data**: add domain-specific real and manipulated samples for your use case.
+- **ai_generated**: [CIFAKE](https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images)
+- **deepfake**: [DFDC Preview](https://www.kaggle.com/c/deepfake-detection-challenge/data), [FaceForensics++](https://github.com/ondyari/FaceForensics)
+- **gan_generated**: [CIFAKE](https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images), [140k Real and Fake Faces](https://www.kaggle.com/datasets/xhlulu/140k-real-and-fake-faces)
+- **diffusion_generated**: [DiffusionDB](https://huggingface.co/datasets/poloclub/diffusiondb)
+- **manipulated**: [FaceForensics++](https://github.com/ondyari/FaceForensics), [CASIA v2](https://github.com/namtpham/casia2groundtruth)
+- **real**: [FFHQ](https://github.com/NVlabs/ffhq-dataset), [Open Images](https://storage.googleapis.com/openimages/web/index.html)
+
+#### How to upload/copy data into these folders
+
+After downloading and extracting each dataset, copy files into class folders:
+
+```bash
+# example: copy extracted images to train class folders
+cp -r /path/to/extracted/ai_images/* data/train/ai_generated/
+cp -r /path/to/extracted/deepfake_images/* data/train/deepfake/
+cp -r /path/to/extracted/gan_images/* data/train/gan_generated/
+cp -r /path/to/extracted/diffusion_images/* data/train/diffusion_generated/
+cp -r /path/to/extracted/manipulated_images/* data/train/manipulated/
+cp -r /path/to/extracted/real_images/* data/train/real/
+```
+
+Then create validation split (example 80/20 split):
+
+```bash
+# move 20% samples from each class into val folders (manual or script-based split)
+# keep train/val both containing all 6 classes
+```
 
 For better accuracy, combine multiple datasets, keep labels clean, and maintain similar numbers of images for each class in both `train` and `val`.
 
