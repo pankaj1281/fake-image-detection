@@ -43,6 +43,8 @@ class Trainer:
         best_val_loss = float("inf")
         stale_epochs = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if device.type == "cuda":
+            torch.backends.cudnn.benchmark = True
         self.model.to(device)
 
         mlflow.set_experiment("fake-image-detection")
@@ -90,3 +92,4 @@ class Trainer:
                     if stale_epochs >= self.config.early_stopping_patience:
                         logger.info("Early stopping triggered at epoch %d", epoch)
                         break
+        self.writer.close()

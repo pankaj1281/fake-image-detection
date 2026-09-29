@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any
 
@@ -36,7 +37,7 @@ def build_dataloaders(
     val_dir: str | Path,
     image_size: int = 380,
     batch_size: int = 16,
-    num_workers: int = 2,
+    num_workers: int | None = None,
 ) -> tuple[Any, Any]:
     import torch
     from torch.utils.data import DataLoader
@@ -52,18 +53,24 @@ def build_dataloaders(
     )
     train_dataset = ImageFolder(train_dir, transform=transform)
     val_dataset = ImageFolder(val_dir, transform=transform)
+    worker_count = num_workers if num_workers is not None else max(1, min(8, (os.cpu_count() or 2) - 1))
+    use_workers = worker_count > 0
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=num_workers,
+        num_workers=worker_count,
         pin_memory=True,
+        persistent_workers=use_workers,
+        prefetch_factor=2 if use_workers else None,
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=num_workers,
+        num_workers=worker_count,
         pin_memory=True,
+        persistent_workers=use_workers,
+        prefetch_factor=2 if use_workers else None,
     )
     return train_loader, val_loader
