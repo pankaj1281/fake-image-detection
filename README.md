@@ -96,6 +96,26 @@ Create folders automatically (optional, safe to re-run):
 python -m src.dataset.prepare_structure
 ```
 
+Prepare train/validation data + manifest automatically:
+
+```bash
+python -m src.dataset.prepare_dataset --source-dir data/raw --val-ratio 0.2 --reset-splits
+```
+
+Expected source structure:
+
+```text
+data/raw/
+├── ai_generated/
+├── deepfake/
+├── gan_generated/
+├── diffusion_generated/
+├── manipulated/
+└── real/
+```
+
+This command validates class folders, creates balanced `train/val` splits, and generates `data/dataset_manifest.csv`.
+
 #### How to fill all 6 class folders correctly
 
 This project trains a **6-class setup** (`ai_generated`, `deepfake`, `gan_generated`, `diffusion_generated`, `manipulated`, `real`), not a single generic `fake` folder.
@@ -141,8 +161,16 @@ For better accuracy, combine multiple datasets, keep labels clean, and maintain 
 
 ### 3) Train the model
 
+Fast iteration mode (recommended in VS Code while tuning):
+
 ```bash
-python -m src.training.train
+python -m src.training.train --profile fast
+```
+
+Best-accuracy mode (full ensemble):
+
+```bash
+python -m src.training.train --profile accurate
 ```
 
 What this run does:
@@ -151,6 +179,16 @@ What this run does:
 - Saves checkpoints in `models/checkpoints/`
 - Logs metrics to TensorBoard and MLflow
 - Uses early stopping automatically
+
+Common speed/accuracy overrides:
+
+```bash
+# tune data loading and throughput
+python -m src.training.train --profile fast --num-workers 8 --batch-size 32
+
+# custom backbone subset
+python -m src.training.train --profile accurate --backbones efficientnet_b4,convnext_tiny
+```
 
 Optional monitoring in separate terminals:
 
@@ -204,6 +242,14 @@ Then open the local Vite URL shown in the terminal (usually `http://localhost:51
 ```bash
 python -m unittest discover -s tests
 ```
+
+### Fast + accurate training checklist
+
+1. Use `src.dataset.prepare_dataset` to avoid class imbalance and split mistakes.
+2. First run `--profile fast` to verify data and pipeline quickly.
+3. For final training, run `--profile accurate`.
+4. Keep class counts similar across all 6 folders.
+5. Increase `--num-workers` and keep data on SSD for faster loading.
 
 Frontend production build check:
 
