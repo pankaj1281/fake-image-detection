@@ -136,6 +136,25 @@ This project trains a **6-class setup** (`ai_generated`, `deepfake`, `gan_genera
 - **manipulated**: [FaceForensics++](https://github.com/ondyari/FaceForensics), [CASIA v2](https://github.com/namtpham/casia2groundtruth)
 - **real**: [FFHQ](https://github.com/NVlabs/ffhq-dataset), [Open Images](https://storage.googleapis.com/openimages/web/index.html)
 
+#### How many images are needed for better accuracy
+
+For this 6-class model, keep class counts as balanced as possible.
+
+| Target quality | Train images per class | Val images per class | Total images (6 classes) |
+|---|---:|---:|---:|
+| Minimum usable baseline | 2,000 | 400 | 14,400 |
+| Good accuracy target | 5,000 | 1,000 | 36,000 |
+| Strong production-like target | 10,000+ | 2,000+ | 72,000+ |
+
+If one class has much fewer samples than others, the model will bias toward larger classes and give wrong predictions more often.
+
+#### Accuracy expectations (realistic)
+
+- With clean labels + balanced classes + mixed dataset sources, you can usually get much better stability than small or noisy datasets.
+- If your data is small (<2,000/class) or noisy/mislabeled, accuracy will fluctuate and inference can be unreliable.
+- Always evaluate on validation data that is source-separated from training data to avoid leakage and inflated accuracy.
+- For final quality, run `--profile accurate` after validating setup with `--profile fast`.
+
 #### How to upload/copy data into these folders
 
 After downloading and extracting each dataset, copy files into class folders:
