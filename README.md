@@ -138,24 +138,23 @@ export DATASET_MODE=multiclass
 Then use class folders:
 `ai_generated`, `deepfake`, `gan_generated`, `diffusion_generated`, `manipulated`, `real`.
 
-#### How to upload/copy data into these folders
+#### How to upload/copy data into raw folders
 
 After downloading and extracting each dataset, copy files into class folders:
 
 ```bash
 # binary mode example
-cp -r /path/to/extracted/fake_images/* data/train/fake/
-cp -r /path/to/extracted/real_images/* data/train/real/
+cp -r /path/to/extracted/fake_images/* data/raw/fake/
+cp -r /path/to/extracted/real_images/* data/raw/real/
 ```
 
-Then create validation split (example 80/20 split):
+Then run dataset preparation to create train/val automatically:
 
 ```bash
-# move 20% samples from each class into val folders (manual or script-based split)
-# keep train/val balanced for fake and real
+python -m src.dataset.prepare_dataset --source-dir data/raw --val-ratio 0.2 --reset-splits
 ```
 
-For better accuracy, combine multiple datasets, keep labels clean, and maintain similar numbers for fake and real in both `train` and `val`.
+You do **not** need to manually create `data/train` or `data/val` splits from raw data. The command above creates balanced fake/real train and val folders for you.
 
 ### 3) Train the model
 
