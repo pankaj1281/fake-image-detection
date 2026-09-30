@@ -104,6 +104,10 @@ data/raw/
 └── real/
 ```
 
+You can paste your own images directly into these folders:
+- Put fake/AI-generated images in `data/raw/fake/`
+- Put authentic images in `data/raw/real/`
+
 In binary mode, `prepare_dataset` also accepts fake subtype folders (for example `ai_generated/`, `deepfake/`, `gan_generated/`, `diffusion_generated/`, `manipulated/`) and merges them into `fake/` automatically.
 
 This command validates class folders, creates balanced `train/val` splits, and generates `data/dataset_manifest.csv`.
