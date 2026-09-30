@@ -4,7 +4,7 @@ Production-ready AI-powered fake image detection platform using **PyTorch**, **F
 
 ## Features
 
-- Detects: AI-generated, deepfake, GAN-generated, diffusion-generated, manipulated, and real images.
+- Detects fake vs real images by default (with optional 6-class multiclass mode).
 - Ensemble architecture with:
   - EfficientNet-B4
   - ConvNeXt
@@ -68,23 +68,17 @@ Installs backend dependencies (PyTorch, FastAPI, MLflow, TensorBoard, etc.).
 
 ### 2) Prepare training data
 
-Training expects this exact folder layout:
+By default this project uses a **binary setup** (`fake`, `real`) so data collection is easier and training is faster.
+
+Training expects this default folder layout:
 
 ```text
 data/
 ├── train/
-│   ├── ai_generated/
-│   ├── deepfake/
-│   ├── gan_generated/
-│   ├── diffusion_generated/
-│   ├── manipulated/
+│   ├── fake/
 │   └── real/
 └── val/
-    ├── ai_generated/
-    ├── deepfake/
-    ├── gan_generated/
-    ├── diffusion_generated/
-    ├── manipulated/
+    ├── fake/
     └── real/
 ```
 
@@ -102,70 +96,51 @@ Prepare train/validation data + manifest automatically:
 python -m src.dataset.prepare_dataset --source-dir data/raw --val-ratio 0.2 --reset-splits
 ```
 
-Expected source structure:
+Expected source structure (binary default):
 
 ```text
 data/raw/
-├── ai_generated/
-├── deepfake/
-├── gan_generated/
-├── diffusion_generated/
-├── manipulated/
+├── fake/
 └── real/
 ```
 
+In binary mode, `prepare_dataset` also accepts fake subtype folders (for example `ai_generated/`, `deepfake/`, `gan_generated/`, `diffusion_generated/`, `manipulated/`) and merges them into `fake/` automatically.
+
 This command validates class folders, creates balanced `train/val` splits, and generates `data/dataset_manifest.csv`.
 
-#### How to fill all 6 class folders correctly
+#### Recommended data sources (easy to collect)
 
-This project trains a **6-class setup** (`ai_generated`, `deepfake`, `gan_generated`, `diffusion_generated`, `manipulated`, `real`), not a single generic `fake` folder.
+- **Fake images**: [CIFAKE](https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images), [140k Real and Fake Faces](https://www.kaggle.com/datasets/xhlulu/140k-real-and-fake-faces), [Deepfake Detection Challenge (DFDC)](https://www.kaggle.com/c/deepfake-detection-challenge/data), [FaceForensics++](https://github.com/ondyari/FaceForensics)
+- **Real images**: [Flickr-Faces-HQ (FFHQ)](https://github.com/NVlabs/ffhq-dataset), [Open Images](https://storage.googleapis.com/openimages/web/index.html), [CelebA](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html)
 
-- Put authentic photos in `real/`.
-- Put fake images into the specific fake subtype folders above.
-- Keep class counts as balanced as possible (avoid one class dominating training).
-- Use the same quality level (resolution/compression) across classes.
-- Remove duplicates and near-duplicates before splitting.
-- Split by source/identity first, then into `train/` and `val/`, to avoid data leakage.
+#### How many images are needed (binary fake/real)
 
-#### Recommended data sources (with links)
+| Target quality | Train fake | Train real | Val fake | Val real | Total |
+|---|---:|---:|---:|---:|---:|
+| Quick baseline | 1,500 | 1,500 | 300 | 300 | 3,600 |
+| Good local result | 2,500 | 2,500 | 500 | 500 | 6,000 |
+| Stronger result | 5,000+ | 5,000+ | 1,000+ | 1,000+ | 12,000+ |
 
-- **ai_generated**: [CIFAKE](https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images)
-- **deepfake**: [DFDC Preview](https://www.kaggle.com/c/deepfake-detection-challenge/data), [FaceForensics++](https://github.com/ondyari/FaceForensics)
-- **gan_generated**: [CIFAKE](https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images), [140k Real and Fake Faces](https://www.kaggle.com/datasets/xhlulu/140k-real-and-fake-faces)
-- **diffusion_generated**: [DiffusionDB](https://huggingface.co/datasets/poloclub/diffusiondb)
-- **manipulated**: [FaceForensics++](https://github.com/ondyari/FaceForensics), [CASIA v2](https://github.com/namtpham/casia2groundtruth)
-- **real**: [FFHQ](https://github.com/NVlabs/ffhq-dataset), [Open Images](https://storage.googleapis.com/openimages/web/index.html)
+Your 4,000-image dataset is enough to start (target around 2,000 fake + 2,000 real). Focus on clean labels and balanced classes for better accuracy.
 
-#### How many images are needed for better accuracy
+#### Optional: switch back to 6-class mode
 
-For this 6-class model, keep class counts as balanced as possible.
+If you want subtype predictions later, enable multiclass mode before preparing data and training:
 
-| Target quality | Train images per class | Val images per class | Total images (6 classes) |
-|---|---:|---:|---:|
-| Minimum usable baseline | 2,000 | 400 | 14,400 |
-| Good accuracy target | 5,000 | 1,000 | 36,000 |
-| Strong production-like target | 10,000+ | 2,000+ | 72,000+ |
+```bash
+export DATASET_MODE=multiclass
+```
 
-If one class has much fewer samples than others, the model will bias toward larger classes and give wrong predictions more often.
-
-#### Accuracy expectations (realistic)
-
-- With clean labels + balanced classes + mixed dataset sources, you can usually get much better stability than small or noisy datasets.
-- If your data is small (<2,000/class) or noisy/mislabeled, accuracy will fluctuate and inference can be unreliable.
-- Always evaluate on validation data that is source-separated from training data to avoid leakage and inflated accuracy.
-- For final quality, run `--profile accurate` after validating setup with `--profile fast`.
+Then use class folders:
+`ai_generated`, `deepfake`, `gan_generated`, `diffusion_generated`, `manipulated`, `real`.
 
 #### How to upload/copy data into these folders
 
 After downloading and extracting each dataset, copy files into class folders:
 
 ```bash
-# example: copy extracted images to train class folders
-cp -r /path/to/extracted/ai_images/* data/train/ai_generated/
-cp -r /path/to/extracted/deepfake_images/* data/train/deepfake/
-cp -r /path/to/extracted/gan_images/* data/train/gan_generated/
-cp -r /path/to/extracted/diffusion_images/* data/train/diffusion_generated/
-cp -r /path/to/extracted/manipulated_images/* data/train/manipulated/
+# binary mode example
+cp -r /path/to/extracted/fake_images/* data/train/fake/
 cp -r /path/to/extracted/real_images/* data/train/real/
 ```
 
@@ -173,10 +148,10 @@ Then create validation split (example 80/20 split):
 
 ```bash
 # move 20% samples from each class into val folders (manual or script-based split)
-# keep train/val both containing all 6 classes
+# keep train/val balanced for fake and real
 ```
 
-For better accuracy, combine multiple datasets, keep labels clean, and maintain similar numbers of images for each class in both `train` and `val`.
+For better accuracy, combine multiple datasets, keep labels clean, and maintain similar numbers for fake and real in both `train` and `val`.
 
 ### 3) Train the model
 
@@ -184,6 +159,12 @@ Fast iteration mode (recommended in VS Code while tuning):
 
 ```bash
 python -m src.training.train --profile fast
+```
+
+Faster run on local machine (good for VS Code iteration):
+
+```bash
+python -m src.training.train --profile fast --backbones convnext_tiny --epochs 4 --image-size 160 --batch-size 16
 ```
 
 Best-accuracy mode (full ensemble):
@@ -267,8 +248,15 @@ python -m unittest discover -s tests
 1. Use `src.dataset.prepare_dataset` to avoid class imbalance and split mistakes.
 2. First run `--profile fast` to verify data and pipeline quickly.
 3. For final training, run `--profile accurate`.
-4. Keep class counts similar across all 6 folders.
+4. Keep fake/real class counts similar.
 5. Increase `--num-workers` and keep data on SSD for faster loading.
+
+### Other places you can train faster
+
+- **Google Colab** (free + easy GPU start)
+- **Kaggle Notebooks** (free GPU sessions close to Kaggle datasets)
+- **Paperspace Gradient**
+- **AWS EC2 GPU** / **GCP Vertex AI** / **Azure ML** (paid, longer and larger runs)
 
 Frontend production build check:
 
