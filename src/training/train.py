@@ -43,7 +43,7 @@ def main() -> None:
         return
 
     profile_defaults = {
-        "fast": {"image_size": 224, "batch_size": 32, "backbones": ["convnext_tiny"], "epochs": 10},
+        "fast": {"image_size": 192, "batch_size": 24, "backbones": ["convnext_tiny"], "epochs": 6},
         "accurate": {
             "image_size": 380,
             "batch_size": 16,

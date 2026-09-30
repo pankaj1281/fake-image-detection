@@ -7,8 +7,10 @@ from src.utils.config import settings
 
 
 def main() -> None:
-    y_true = [0, 1, 2, 3, 4, 5]
-    y_pred = [0, 1, 2, 2, 4, 5]
+    y_true = list(range(settings.num_classes))
+    y_pred = y_true.copy()
+    if settings.num_classes > 1:
+        y_pred[-1] = settings.num_classes - 2
     y_score = np.eye(settings.num_classes)
     report = evaluate_predictions(y_true, y_pred, y_score, settings.num_classes)
     print(report)

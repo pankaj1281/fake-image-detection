@@ -30,6 +30,26 @@ def _clean_split(split_dir: Path) -> None:
                 path.unlink()
 
 
+def _collect_source_images(source_dir: Path, class_name: str) -> list[Path]:
+    if class_name != "fake":
+        class_source = source_dir / class_name
+        if not class_source.exists():
+            raise FileNotFoundError(f"Missing class folder in source data: {class_source}")
+        return _collect_images(class_source)
+
+    fake_aliases = dict.fromkeys(settings.binary_fake_aliases)
+    images: list[Path] = []
+    for alias in fake_aliases:
+        alias_dir = source_dir / alias
+        if alias_dir.exists():
+            images.extend(_collect_images(alias_dir))
+    if not images:
+        searched = ", ".join(str(source_dir / alias) for alias in fake_aliases)
+        raise FileNotFoundError(f"Missing fake class folder(s). Searched: {searched}")
+    unique: dict[str, Path] = {str(path.resolve()): path for path in images}
+    return sorted(unique.values())
+
+
 def prepare_dataset(
     source_dir: Path,
     output_dir: Path,
@@ -48,11 +68,7 @@ def prepare_dataset(
     rows: list[dict[str, str]] = []
 
     for class_name in settings.class_names:
-        class_source = source_dir / class_name
-        if not class_source.exists():
-            raise FileNotFoundError(f"Missing class folder in source data: {class_source}")
-
-        all_images = _collect_images(class_source)
+        all_images = _collect_source_images(source_dir=source_dir, class_name=class_name)
         rng.shuffle(all_images)
         total = len(all_images)
         val_count = int(total * val_ratio)
