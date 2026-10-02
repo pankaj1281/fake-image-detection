@@ -70,6 +70,12 @@ Installs backend dependencies (PyTorch, FastAPI, MLflow, TensorBoard, etc.).
 
 By default this project uses a **binary setup** (`fake`, `real`) so data collection is easier and training is faster.
 
+If you previously enabled multiclass mode, switch back to binary before preparing data:
+
+```bash
+unset DATASET_MODE
+```
+
 Training expects this default folder layout:
 
 ```text
@@ -94,6 +100,12 @@ Prepare train/validation data + manifest automatically:
 
 ```bash
 python -m src.dataset.prepare_dataset --source-dir data/raw --val-ratio 0.2 --reset-splits
+```
+
+Quick check (should print `binary ['fake', 'real']`):
+
+```bash
+python -c "from src.utils.config import settings; print(settings.dataset_mode, settings.class_names)"
 ```
 
 Expected source structure (binary default):
@@ -154,6 +166,16 @@ python -m src.dataset.prepare_dataset --source-dir data/raw --val-ratio 0.2 --re
 You do **not** need to manually create `data/train` or `data/val` splits from raw data. The command above creates balanced fake/real train and val folders for you.
 
 ### 3) Train the model
+
+Binary training flow (fake/real folders):
+
+```bash
+unset DATASET_MODE
+python -m src.dataset.prepare_dataset --source-dir data/raw --val-ratio 0.2 --reset-splits
+python -m src.training.train --profile fast
+```
+
+If you still see 6 classes, your shell/session is still using `DATASET_MODE=multiclass`. Run `unset DATASET_MODE` in the same terminal, then rerun dataset preparation and training.
 
 Fast iteration mode (recommended in VS Code while tuning):
 
