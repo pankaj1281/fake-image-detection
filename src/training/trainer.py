@@ -30,7 +30,7 @@ class Trainer:
         self.config = config
         self.optimizer = AdamW(model.parameters(), lr=config.learning_rate)
         self.criterion = nn.CrossEntropyLoss()
-        self.scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
+        self.scaler = torch.amp.GradScaler("cuda", enabled=torch.cuda.is_available())
         self.writer = SummaryWriter(log_dir="runs/fake_image_detector")
 
     def _save_checkpoint(self, epoch: int, val_loss: float) -> Path:
@@ -56,7 +56,7 @@ class Trainer:
                 for images, labels in train_loader:
                     images, labels = images.to(device), labels.to(device)
                     self.optimizer.zero_grad(set_to_none=True)
-                    with torch.cuda.amp.autocast(enabled=torch.cuda.is_available()):
+                    with torch.amp.autocast("cuda", enabled=torch.cuda.is_available()):
                         logits = self.model(images)
                         loss = self.criterion(logits, labels)
                     self.scaler.scale(loss).backward()

@@ -30,14 +30,16 @@ class Settings:
 
     def __post_init__(self) -> None:
         if self.dataset_mode == "multiclass":
-            self.class_names = [
-                "ai_generated",
-                "deepfake",
-                "gan_generated",
-                "diffusion_generated",
-                "manipulated",
-                "real",
-            ]
+            self.class_names = sorted(
+                [
+                    "ai_generated",
+                    "deepfake",
+                    "gan_generated",
+                    "diffusion_generated",
+                    "manipulated",
+                    "real",
+                ]
+            )
             return
         self.dataset_mode = "binary"
         self.class_names = ["fake", "real"]
