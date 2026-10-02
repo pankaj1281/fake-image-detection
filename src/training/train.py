@@ -6,6 +6,37 @@ from pathlib import Path
 from src.utils.config import settings
 
 
+def _force_binary_mode() -> None:
+    settings.dataset_mode = "binary"
+    settings.class_names = ["fake", "real"]
+
+
+def _ensure_binary_dataset_from_raw(
+    source_dir: Path,
+    val_ratio: float,
+    reset_splits: bool,
+) -> None:
+    required_dirs = [
+        Path("data/train/fake"),
+        Path("data/train/real"),
+        Path("data/val/fake"),
+        Path("data/val/real"),
+    ]
+    if all(path.exists() for path in required_dirs):
+        return
+
+    from src.dataset.prepare_dataset import prepare_dataset
+
+    prepare_dataset(
+        source_dir=source_dir,
+        output_dir=Path("data"),
+        val_ratio=val_ratio,
+        seed=42,
+        reset_splits=reset_splits,
+        manifest_path=Path("data/dataset_manifest.csv"),
+    )
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Train fake-image detection model")
     parser.add_argument(
@@ -19,6 +50,9 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--image-size", type=int, default=None)
     parser.add_argument("--num-workers", type=int, default=None)
+    parser.add_argument("--source-dir", type=Path, default=Path("data/raw"))
+    parser.add_argument("--val-ratio", type=float, default=0.2)
+    parser.add_argument("--reset-splits", action="store_true")
     parser.add_argument(
         "--backbones",
         type=str,
@@ -31,6 +65,14 @@ def _build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
+    if not 0 <= args.val_ratio < 1:
+        raise ValueError("--val-ratio must be between 0 and 1.")
+    _force_binary_mode()
+    _ensure_binary_dataset_from_raw(
+        source_dir=args.source_dir,
+        val_ratio=args.val_ratio,
+        reset_splits=args.reset_splits,
+    )
 
     train_dir = Path("data/train")
     val_dir = Path("data/val")
@@ -66,9 +108,26 @@ def main() -> None:
         if args.backbones
         else selected["backbones"]
     )
+    train_loader, val_loader = build_dataloaders(
+        train_dir=train_dir,
+        val_dir=val_dir,
+        image_size=args.image_size or selected["image_size"],
+        batch_size=args.batch_size or selected["batch_size"],
+        num_workers=args.num_workers,
+    )
+
+    required_classes = ["fake", "real"]
+    train_classes = sorted(train_loader.dataset.classes)
+    val_classes = sorted(val_loader.dataset.classes)
+    if train_classes != required_classes or val_classes != required_classes:
+        print(
+            "Binary training expects only 'fake' and 'real' class folders in data/train and data/val. "
+            "Please rebuild splits from data/raw with fake and real classes."
+        )
+        return
 
     model = EnsembleModel(
-        num_classes=settings.num_classes,
+        num_classes=len(required_classes),
         pretrained=True,
         backbones=selected_backbones,
     )
@@ -77,13 +136,6 @@ def main() -> None:
         epochs=args.epochs or selected["epochs"],
     )
     trainer = Trainer(model=model, config=config)
-    train_loader, val_loader = build_dataloaders(
-        train_dir=train_dir,
-        val_dir=val_dir,
-        image_size=args.image_size or selected["image_size"],
-        batch_size=args.batch_size or selected["batch_size"],
-        num_workers=args.num_workers,
-    )
     trainer.fit(train_loader=train_loader, val_loader=val_loader)
 
 
