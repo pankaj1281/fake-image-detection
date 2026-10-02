@@ -127,16 +127,13 @@ This command validates class folders, creates balanced `train/val` splits, and g
 
 Your 4,000-image dataset is enough to start (target around 2,000 fake + 2,000 real). Focus on clean labels and balanced classes for better accuracy.
 
-#### Optional: switch back to 6-class mode
+#### Binary-only training note
 
-If you want subtype predictions later, enable multiclass mode before preparing data and training:
+`python -m src.training.train` now enforces binary training with exactly two classes: `fake` and `real`.
 
-```bash
-export DATASET_MODE=multiclass
-```
-
-Then use class folders:
-`ai_generated`, `deepfake`, `gan_generated`, `diffusion_generated`, `manipulated`, `real`.
+- It ignores `DATASET_MODE=multiclass` during training.
+- It validates that `data/train` and `data/val` contain only `fake` and `real` class folders.
+- If required train/val folders are missing, it prepares them automatically from `data/raw`.
 
 #### How to upload/copy data into raw folders
 
@@ -177,6 +174,8 @@ python -m src.training.train --profile accurate
 ```
 
 What this run does:
+- Enforces binary class mode (`fake`, `real`)
+- Auto-prepares `data/train` and `data/val` from `data/raw` when missing
 - Loads images from `data/train` and `data/val`
 - Trains the ensemble model
 - Saves checkpoints in `models/checkpoints/`
@@ -191,6 +190,9 @@ python -m src.training.train --profile fast --num-workers 8 --batch-size 32
 
 # custom backbone subset
 python -m src.training.train --profile accurate --backbones efficientnet_b4,convnext_tiny
+
+# rebuild train/val from raw before training
+python -m src.training.train --profile fast --reset-splits --val-ratio 0.2 --source-dir data/raw
 ```
 
 Optional monitoring in separate terminals:
