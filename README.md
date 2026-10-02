@@ -4,7 +4,7 @@ Production-ready AI-powered fake image detection platform using **PyTorch**, **F
 
 ## Features
 
-- Detects fake vs real images by default (with optional 6-class multiclass mode).
+- Detects fake vs real images (binary mode only).
 - Ensemble architecture with:
   - EfficientNet-B4
   - ConvNeXt
@@ -68,13 +68,7 @@ Installs backend dependencies (PyTorch, FastAPI, MLflow, TensorBoard, etc.).
 
 ### 2) Prepare training data
 
-By default this project uses a **binary setup** (`fake`, `real`) so data collection is easier and training is faster.
-
-If you previously enabled multiclass mode, switch back to binary before preparing data:
-
-```bash
-unset DATASET_MODE
-```
+This project uses a **binary setup** (`fake`, `real`) so data collection is easier and training is faster.
 
 Training expects this default folder layout:
 
@@ -143,7 +137,7 @@ Your 4,000-image dataset is enough to start (target around 2,000 fake + 2,000 re
 
 `python -m src.training.train` now enforces binary training with exactly two classes: `fake` and `real`.
 
-- It ignores `DATASET_MODE=multiclass` during training.
+- It always runs in binary mode (`fake`, `real`).
 - It validates that `data/train` and `data/val` contain only `fake` and `real` class folders.
 - If required train/val folders are missing, it prepares them automatically from `data/raw`.
 
@@ -170,12 +164,9 @@ You do **not** need to manually create `data/train` or `data/val` splits from ra
 Binary training flow (fake/real folders):
 
 ```bash
-unset DATASET_MODE
 python -m src.dataset.prepare_dataset --source-dir data/raw --val-ratio 0.2 --reset-splits
 python -m src.training.train --profile fast
 ```
-
-If you still see 6 classes, your shell/session is still using `DATASET_MODE=multiclass`. Run `unset DATASET_MODE` in the same terminal, then rerun dataset preparation and training.
 
 Fast iteration mode (recommended in VS Code while tuning):
 
