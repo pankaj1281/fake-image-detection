@@ -32,15 +32,24 @@ def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
 
-    from src.dataset.loader import build_dataloaders
-    from src.inference.models import EnsembleModel
-    from src.training.trainer import Trainer, TrainerConfig
-
     train_dir = Path("data/train")
     val_dir = Path("data/val")
     if not train_dir.exists() or not val_dir.exists():
         print("Create data/train and data/val with class folders before training.")
         return
+    try:
+        from src.dataset.loader import build_dataloaders
+        from src.inference.models import EnsembleModel
+        from src.training.trainer import Trainer, TrainerConfig
+    except ModuleNotFoundError as error:
+        missing_module = (error.name or "").split(".")[0]
+        if missing_module in {"torch", "torchvision"}:
+            print(
+                "Missing training dependency. Install requirements first:\n"
+                "pip install -r requirements.txt"
+            )
+            return
+        raise
 
     profile_defaults = {
         "fast": {"image_size": 192, "batch_size": 24, "backbones": ["convnext_tiny"], "epochs": 6},
