@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import os
 from pathlib import Path
 
 
@@ -11,7 +10,7 @@ class Settings:
 
     project_name: str = "Fake Image Detection System"
     model_dir: Path = Path("models")
-    dataset_mode: str = field(default_factory=lambda: os.getenv("DATASET_MODE", "binary").strip().lower())
+    dataset_mode: str = "binary"
     class_names: list[str] = field(default_factory=list)
     model_backbones: list[str] = field(
         default_factory=lambda: ["efficientnet_b4", "convnext_tiny", "vit_b_16"]
@@ -29,18 +28,6 @@ class Settings:
     )
 
     def __post_init__(self) -> None:
-        if self.dataset_mode == "multiclass":
-            self.class_names = sorted(
-                [
-                    "ai_generated",
-                    "deepfake",
-                    "gan_generated",
-                    "diffusion_generated",
-                    "manipulated",
-                    "real",
-                ]
-            )
-            return
         self.dataset_mode = "binary"
         self.class_names = ["fake", "real"]
 
